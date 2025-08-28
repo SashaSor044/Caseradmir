@@ -1,0 +1,125 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Radmir -- Кейс Перекуп (локально)</title>
+<style>
+:root{
+  --bg:#0b0f16; --card:#0f1720; --muted:#9aa4b2; --text:#e6eef8;
+  --accent:#6ad1ff; --ok:#2ecc71; --bad:#ff6b6b; --glass:rgba(255,255,255,0.03);
+}
+body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial;color:var(--text);background:linear-gradient(180deg,#081019 0%,var(--bg) 60%);}
+.app{max-width:1200px;margin:24px auto;padding:18px}
+header{font-weight:700;font-size:26px;text-align:center;margin-bottom:30px;letter-spacing:1px}
+button{padding:18px 24px;border-radius:16px;border:none;cursor:pointer;background:linear-gradient(180deg,var(--card),#0b1320);color:var(--text);font-size:18px;font-weight:600;transition:0.2s;box-shadow:0 6px 15px rgba(0,0,0,0.3);}
+button:hover{transform:scale(1.05);box-shadow:0 10px 25px rgba(0,0,0,0.5);}
+.screen{display:none}
+.screen.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:transform .2s,box-shadow .2s;text-align:center;font-weight:600;font-size:16px;color:var(--text);}
+.card:hover{transform:translateY(-6px);box-shadow:0 12px 35px rgba(2,6,23,0.6);}
+.case-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:16px}
+.lot{background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border-radius:16px;padding:14px;border:1px solid rgba(255,255,255,0.03);display:flex;gap:14px;align-items:flex-start;box-shadow:0 4px 12px rgba(0,0,0,0.2);}
+.lot .meta{flex:1;font-size:16px;line-height:1.4}
+.lot button{margin-top:8px;background:#ff3b30;color:#fff;font-weight:600;padding:10px 16px;border-radius:12px;}
+form{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+input,select{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);background:transparent;color:var(--text);font-size:16px}
+h2{margin-bottom:16px;font-weight:700;font-size:22px;text-align:center}
+@media(max-width:500px){
+  .grid{grid-template-columns:1fr}
+  .lot{flex-direction:column}
+  button{width:100%;font-size:20px;padding:20px 0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>📦 Radmir Кейси</header>
+
+<div id="menu" class="screen active" style="display:flex;flex-direction:column;gap:24px;align-items:center">
+  <button onclick="showScreen('addCase')">➕ Додати новий кейс</button>
+  <button onclick="showScreen('myCases'); loadCases()">📂 Мої кейси</button>
+</div>
+
+<div id="addCase" class="screen">
+  <h2>Додати кейс</h2>
+  <form onsubmit="addCase(event)">
+    <select id="collection" required>
+      <option value="Форсаж">Форсаж</option>
+      <option value="Темные дела">Темные дела</option>
+      <option value="Велесова ночь 1">Велесова ночь 1</option>
+      <option value="Велесова ночь 2">Велесова ночь 2</option>
+      <option value="Оперской">Оперской</option>
+      <option value="Новогодний">Новогодний</option>
+      <option value="Чёрное золото">Чёрное золото</option>
+      <option value="Охотничий">Охотничий</option>
+      <option value="Египетская сила">Египетская сила</option>
+      <option value="Рождественский экспресс">Рождественский экспресс</option>
+      <option value="Пиратский">Пиратський</option>
+      <option value="Проклятие">Проклятие</option>
+      <option value="Зимняя сказка">Зимняя сказка</option>
+    </select>
+    <input type="number" id="buyPrice" placeholder="Ціна купівлі" required>
+    <input type="number" id="sellPrice" placeholder="Ціна виставлення" required>
+    <input type="text" id="kiosk" placeholder="Кіоск" required>
+    <input type="number" id="commission" placeholder="Комісія %" required>
+    <button type="submit">✅ Зберегти</button>
+  </form>
+  <button onclick="showScreen('menu')">⬅️ Назад</button>
+</div>
+
+<div id="myCases" class="screen">
+  <h2>Мої кейси</h2>
+  <div id="caseList" class="case-list"></div>
+  <button onclick="showScreen('menu')">⬅️ Назад</button>
+</div>
+
+</div>
+
+<script>
+const LS_KEY='radmir_cases_v2';
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function addCase(e){
+  e.preventDefault();
+  const collection=document.getElementById('collection').value;
+  const buy=+document.getElementById('buyPrice').value;
+  const sell=+document.getElementById('sellPrice').value;
+  const kiosk=document.getElementById('kiosk').value;
+  const commission=+document.getElementById('commission').value;
+  const profit=sell-buy-(sell*commission/100);
+  const newCase={collection,buyPrice:buy,sellPrice:sell,kiosk,commission,profit};
+  let arr=JSON.parse(localStorage.getItem(LS_KEY))||[];
+  arr.push(newCase);
+  localStorage.setItem(LS_KEY,JSON.stringify(arr));
+  showScreen('myCases'); loadCases();
+}
+function loadCases(){
+  const arr=JSON.parse(localStorage.getItem(LS_KEY))||[];
+  const list=document.getElementById('caseList');
+  list.innerHTML='';
+  if(!arr.length){ list.innerHTML='<p>Немає кейсів 😢</p>'; return;}
+  arr.forEach((c,i)=>{
+    const div=document.createElement('div');
+    div.className='lot';
+    div.innerHTML=`<div class="meta">
+      <strong>${c.collection}</strong><br>
+      Купив: ${c.buyPrice}$<br>
+      Стоїть: ${c.sellPrice}$<br>
+      Кіоск: ${c.kiosk}<br>
+      Комісія: ${c.commission}%<br>
+      <b>Прибуток: ${c.profit.toFixed(2)}$</b><br>
+      <button onclick="removeCase(${i})">🗑 Видалити</button>
+    </div>`;
+    list.appendChild(div);
+  });
+}
+function removeCase(idx){
+  let arr=JSON.parse(localStorage.getItem(LS_KEY))||[];
+  arr.splice(idx,1);
+  localStorage.setItem(LS_KEY,JSON.stringify(arr));
+  loadCases();
+}
+</script>
+</body>
+</html>
